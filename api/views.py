@@ -4,8 +4,8 @@ from rest_framework_simplejwt.backends import TokenBackend
 from rest_framework_simplejwt.exceptions import TokenBackendError
 
 from django.contrib.auth.models import User
-from api.models import Post
-from api.serializers import PostSerializer, UserSerializer
+from api.models import Post, Comment
+from api.serializers import CommentSerializer, PostSerializer, UserSerializer
 
 def get_user_from_token(request):
     try:
@@ -21,6 +21,17 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
+
+    def create(self, request):
+        user = User.objects.create(username=request.data['username'], email=request.data['email'])
+        user.set_password(request.data['password'])
+        user.save()
+
+        if user:
+            serializer = UserSerializer(user, context={'request': request})
+            return Response({'message': "Signup successful!", 'data': serializer.data})
+        else:
+            return Response({'message': "Signup unsuccessful."})
 
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.all()
@@ -57,7 +68,7 @@ class PostViewSet(viewsets.ModelViewSet):
             msg = "Post update unsuccessful."
             return Response({'message': msg})
 
-    def destroy(self, request, pk=None):
+    def destroy(self, request, pk):
         user = get_user_from_token(request)
 
         try: 
@@ -82,3 +93,44 @@ class PostViewSet(viewsets.ModelViewSet):
         except KeyError: 
             # action is not set return default permission_classes
             return [permission() for permission in self.permission_classes]
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes_by_action = {'create':     [permissions.IsAuthenticated],
+                                    'update':     [permissions.IsAuthenticated],
+                                    'destroy':    [permissions.IsAuthenticated],
+                                    'list':       [permissions.AllowAny]}
+
+    def get_queryset(self):
+        post_id = self.kwargs['post_id']
+        queryset = Comment.objects.filter(post__id=post_id)
+        return queryset
+
+    def create(self, request, post_id):
+        user = get_user_from_token(request)
+        
+        try: 
+            post    = Post.objects.get(id=post_id)
+            comment = Comment.objects.create(user=user, post=post, content=request.data['content'])
+
+            msg = "Comment created!"
+            serializer = CommentSerializer(comment, context={'request': request})
+            return Response({'message': msg, 'data': serializer.data})           
+        except Post.DoesNotExist:
+            msg = "Comment create unsuccessful."
+            return Response({'message': msg})
+
+    def destroy(self, request, post_id, comment_id):
+        user = get_user_from_token(request)
+        
+        try:
+            post    = Post.objects.get(id=post_id)
+            comment = Comment.objects.get(id=comment_id)
+ 
+            if user == post.user or user == comment.user:
+                comment.delete()
+                msg = "Comment deleted!"            
+        except (Post.DoesNotExist, Comment.DoesNotExist):
+            msg = "Comment delete unsuccessful."
+
+        return Response({'message': msg})

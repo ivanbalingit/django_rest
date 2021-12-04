@@ -4,3 +4,4 @@ djangorestframework
 markdown
 django-filter
 djangorestframework_simplejwt
+pyyaml

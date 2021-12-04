@@ -1,0 +1,48 @@
+- model: auth.user
+  pk: 2
+  fields:
+    username: user01
+    email: email01@email.com
+    password: password01
+- model: auth.user
+  pk: 3
+  fields:
+    username: user02
+    email: email02@email.com
+    password: password02
+- model: api.post
+  pk: 1
+  fields:
+    user: 2
+    title: "Post by user01"
+    content: "Hello from user01."
+- model: api.post
+  pk: 2
+  fields:
+    user: 3
+    title: "Post by user02"
+    content: "Hello from user02."
+- model: api.comment
+  pk: 1
+  fields:
+    user: 2
+    post: 1
+    content: "Comment by user01 on post id 1"
+- model: api.comment
+  pk: 2
+  fields:
+    user: 2
+    post: 2
+    content: "Comment by user01 on post id 2"
+- model: api.comment
+  pk: 3
+  fields:
+    user: 3
+    post: 1
+    content: "Comment by user02 on post id 1"
+- model: api.comment
+  pk: 4
+  fields:
+    user: 3
+    post: 2
+    content: "Comment by user02 on post id 2"
